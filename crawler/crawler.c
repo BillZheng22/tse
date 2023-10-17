@@ -35,19 +35,19 @@ int main(){
 		pos = 0;                
 	
 		while ((pos = webpage_getNextURL(page, pos, &result)) > 0) {
-			//printf("URL: %s (%s)\n", result, isInternalURL(result, baseURL) ? "Internal" : "External");
-			printf("URL: %s", result);
-			if (IsInternalURL(result) == 0){
-				printf("Internal\n");
+
+			if (IsInternalURL(result)){
+				printf("Internal ");
 			}
 			else{
-				printf("External\n");
+				printf("External ");
 			}
-			//  free(result);
+			printf("URL: %s\n", result);
+			free(result);
 		}
 		// Deallocate the webpage
 		webpage_delete(page);
-		return EXIT_SUCCESS;
+		exit(EXIT_SUCCESS);
 	} else {
 		exit(EXIT_FAILURE);
 	}                 
