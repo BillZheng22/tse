@@ -17,7 +17,6 @@
 #include <queue.h>
 #include <hash.h>
 #include <unistd.h>
-#include <sys/stat.h>
 
 #define _POSIX_SOURCE
 #define MAX_VISITED_URLS 1000
@@ -57,17 +56,17 @@ bool searchURL(void *elementp, const void *key){
 }
 
 int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
-	char * idname;
-	char * path;
-	struct stat stats;
+	char idname[100];
+	char path[100];
 
 	sprintf(idname, "%d" ,id);
-	strcpy(path, "../");
-	strcpy(path, dirname);
-	strcpy(path, "/");
-	strcpy(path, idname);
 
-	FILE * file = fopen(add, "w");
+	strcpy(path, "../");
+	strcat(path, dirname);
+	strcat(path, "/");
+	strcat(path, idname);
+
+	FILE * file = fopen(path, "w");
 
 	//printing the link
 	fprintf(file, "%s\n", webpage_getURL(pagep));
@@ -77,26 +76,18 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
 	fclose(file);
 
 	//check to see if file exists
-	if (access(path, F_OK) != 0 || access(path, R_OK) != 0 || access(path, W_OK) || access(path, X_OK)) {
+	if (access(path, F_OK) != 0) {
+		printf("Error: cannot access file.");
 		return -1;
 	}
 	else {
-		if (stat(path, &stats) == 0) {
-			    printf("File access: ");
-			if (stats.st_mode & R_OK)
-				printf("read ");
-			if (stats.st_mode & W_OK)
-				printf("write ");
-			if (stats.st_mode & X_OK)
-				printf("execute");
-
-		}
-		else {
-			printf("File is accessible, but unable to check file properties.\n");
-		}
+		printf("File Access: ");
+		if (access(path, F_OK) == 0) printf("read ");
+		if (access(path, R_OK) == 0) printf("write ");
+		if (access(path, W_OK) == 0) printf("execute ");
+		printf("\n");
+		return 0;
 	}
-
-	return 0;
 }
 
 int main(){
@@ -109,7 +100,7 @@ int main(){
 	hashtable_t *visited;
 	queue_t* pageQueue;
 	webpage_t * internalPage; //internal page
-	
+
 	seedURL = "https://thayer.github.io/engs50/";
 	page = webpage_new(seedURL, 0, NULL);
 
@@ -161,7 +152,7 @@ int main(){
 		
 		hclose(visited);
 
-		pagesave(page, 1, "charisma");
+		pagesave(page, 1, "pages");
 		webpage_delete(page);
 		exit(EXIT_SUCCESS);
 	} else {
