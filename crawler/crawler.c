@@ -82,6 +82,7 @@ int main(int argc, char *argv[]){
 	webpage_t *internalPage; //internal page
 	int maxdepth, currdepth;
 	struct stat stats; //checks if directory is valid
+	bool first = false; //temporary boolean for looping
 
 	//checks if there are four arguments 
 	if (argc != 4) {
@@ -162,8 +163,13 @@ int main(int argc, char *argv[]){
 					free(result);
 				}
 			}
-			//increments the currdepth by 1, if the webpage 
-			if (webpage_getDepth(temp) == currdepth) currdepth = webpage_getDepth(temp) + 1;
+			//particular case for the first depth 
+			if (!first) {
+				currdepth++;
+				first = true;
+			}
+			//increments the currdepth to the next required webpage depth
+			else if ((webpage_getDepth(temp) >= currdepth) && first) currdepth = webpage_getDepth(temp) + 1;
 		}
 		
 		fflush(stdout);
@@ -171,8 +177,11 @@ int main(int argc, char *argv[]){
 		fflush(stdout);
 		happly(visited, printURL);
 		
-		//deletes the elements in the queue
-		while((internalPage = (qget(pageQueue))) != NULL){     //Bill added this in!                         
+		//deletes the remaining elements in the queue
+		while((internalPage = (qget(pageQueue))) != NULL){     //Bill added this in!         
+			fflush(stdout);
+			printf("%s\n", webpage_getURL(internalPage));
+			fflush(stdout);                
       		webpage_delete(internalPage);                                                
    		}
 
