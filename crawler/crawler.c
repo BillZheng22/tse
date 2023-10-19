@@ -67,17 +67,27 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
 	}
 }
 
-int main(){
+int main(int argc, char *argv[]){
 	int pos = 0;
 	bool fetchResult;
-	char *seedURL, *result;
+	char *seedURL, *result, *pagedir;
 	webpage_t *page;
 	webpage_t *temp; //for breadth depth
 	hashtable_t *visited;
 	queue_t* pageQueue;
 	webpage_t *internalPage; //internal page
+	int maxdepth;
 
+	maxdepth = strtod(argv[3], NULL);
+    if (maxdepth < 0) {
+        printf("usage: crawler <seedurl> <pagedir> <maxdepth>\n");
+        exit(EXIT_FAILURE);   
+    }
+	//seedURL = argv[1];
 	seedURL = "https://thayer.github.io/engs50/";
+
+	pagedir = argv[2];
+
 	page = webpage_new(seedURL, 0, NULL);
 
 	// Fetch the webpage HTML
@@ -120,11 +130,11 @@ int main(){
 		happly(visited, printURL);
 		
 		while((internalPage = (qget(pageQueue))) != NULL){     //Bill added this in!                         
-      			webpage_delete(internalPage);                                                
+      		webpage_delete(internalPage);                                                
    		}       
 
-		qclose(pageQueue); //BILL added this in.
 		hclose(visited);
+		qclose(pageQueue); //BILL added this in.
 		pagesave(page, 1, "pages");
 		webpage_delete(page);
 		exit(EXIT_SUCCESS);
