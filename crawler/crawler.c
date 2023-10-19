@@ -29,7 +29,8 @@ void printURL(void *data){
 }
 
 bool searchURL(void *elementp, const void *key){
-	char *url = (char *)elementp;
+	webpage_t *webpage = (webpage_t *)elementp;
+	char *url = webpage_getURL(webpage);
 	return (strcmp(url, (char *)key) == 0);
 }
 
@@ -131,7 +132,7 @@ int main(int argc, char *argv[]){
 		//hput(visited, page, seedURL, strlen(seedURL));
 		idincrement = 1;
 		pagesave(page, idincrement, pagedir);
-		while ((temp = qget(pageQueue)) != NULL) {
+		while ((temp = qget(pageQueue)) != NULL && currdepth < maxdepth) {
 			currdepth++;
 			printf("popped this boi: %s\n", webpage_getURL(temp));
 			pos = 0;
@@ -145,6 +146,7 @@ int main(int argc, char *argv[]){
 						webpage_fetch(internalPage);
 						//put the new page in the queue
 						qput(pageQueue, internalPage);
+
 						//mark page as visited
 						hput(visited, internalPage, result, strlen(result)); //YO DJ, not sure if it should be internalPage or result again. 
 						//Check to see which one it should be!
