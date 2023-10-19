@@ -132,9 +132,10 @@ int main(int argc, char *argv[]){
 		//hput(visited, page, seedURL, strlen(seedURL));
 		idincrement = 1;
 		pagesave(page, idincrement, pagedir);
-		while ((temp = qget(pageQueue)) != NULL && currdepth < maxdepth) {
-			currdepth++;
+		currdepth += 1;
+		while ((temp = qget(pageQueue)) != NULL && currdepth <= maxdepth) {
 			printf("popped this boi: %s\n", webpage_getURL(temp));
+			//if the currdepth is not the right depth as to where the temporary page is, then increase it. 
 			pos = 0;
 			while ((pos = webpage_getNextURL(temp, pos, &result)) > 0) {
 				//if internal url exists 
@@ -142,6 +143,7 @@ int main(int argc, char *argv[]){
 				if (IsInternalURL(result)){
 					// Create a new webpage for the internal URL if the webpage has not been visited
 					if (hsearch(visited, searchURL, result, strlen(result)) == NULL){
+						printf("currdepth now: %d\n", currdepth);
 						internalPage = webpage_new(result, currdepth, NULL);
 						webpage_fetch(internalPage);
 						//put the new page in the queue
@@ -160,6 +162,8 @@ int main(int argc, char *argv[]){
 					free(result);
 				}
 			}
+			//increments the currdepth by 1, if the webpage 
+			if (webpage_getDepth(temp) == currdepth) currdepth = webpage_getDepth(temp) + 1;
 		}
 		
 		fflush(stdout);
