@@ -191,6 +191,7 @@ int main(int argc, char *argv[]){
 		webpage_delete(page);
 		exit(EXIT_SUCCESS);
 	} else {
+		printf("error: no data from the URL could be fetched.\n");
 		qclose(pageQueue);
 		hclose(visited);
 		webpage_delete(page);
