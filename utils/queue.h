@@ -9,10 +9,10 @@
 typedef void queue_t;		
 
 /* create an empty queue */
-queue_t* qopen(void);        
+queue_t* qopen(void);
 
 /* deallocate a queue, frees everything in it */
-void qclose(queue_t *qp);   
+void qclose(queue_t *qp);
 
 /* put element at the end of the queue
  * returns 0 is successful; nonzero otherwise 

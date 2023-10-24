@@ -10,190 +10,151 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <webpage.h>
 #include <queue.h>
 #include <hash.h>
-#include <unistd.h>
-#include <sys/stat.h>
 
-#define _POSIX_SOURCE
-#define MAX_VISITED_URLS 1000
+int main(const int argc, char* argv[]);
+//static void parseArgs(const int argc, char* argv[],char** seedURL, char** pageDirectory, int* maxDepth);
+static void crawl(char* seedURL, char* pageDirectory, const int maxDepth);
+static void pageScan(webpage_t* page, queue_t* pagesToCrawl, hashtable_t* visitedURLs);
 
-void printURL(void *data){
-	webpage_t *page = (webpage_t *)data;
-	char *url = webpage_getURL(page);
-	printf("Internal URL: %s\n", url);
-}
+int queueSize = 0; // keeps track of the number of items in the bag
 
 bool searchURL(void *elementp, const void *key){
-	webpage_t *webpage = (webpage_t *)elementp;
-	char *url = webpage_getURL(webpage);
-	return (strcmp(url, (char *)key) == 0);
+  char *url = (char *)elementp;
+  return(strcmp(url, (char *) key) == 0);
 }
 
-int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
-	char idname[100];
-	char path[100];
+int32_t pagesave(webpage_t *pagep, int id, char *dirname){
+  FILE * resultFile;
+  char filename[50];
 
-	sprintf(idname, "%d" ,id);
+  sprintf(filename, "../%s/%d", dirname, id);
+  resultFile = fopen(filename, "w");
 
-	strcpy(path, dirname);
-	strcat(path, "/");
-
-	//adds the filename to the path
-	strcat(path, idname);
-
-	FILE * file = fopen(path, "w");
-
-	//printing the link
-	fprintf(file, "%s\n", webpage_getURL(pagep));
-	fprintf(file, "%d\n", webpage_getDepth(pagep));
-	fprintf(file, "%d\n", webpage_getHTMLlen(pagep));
-	fprintf(file, "%s\n", webpage_getHTML(pagep));
-	fclose(file);
-
-	//check to see if file exists
-	if (access(path, F_OK) != 0) {
-		printf("error: cannot access file.");
-		return -1;
-	}
-	else {
-		printf("File Access: ");
-		if (access(path, F_OK) == 0) printf("read ");
-		if (access(path, R_OK) == 0) printf("write ");
-		if (access(path, W_OK) == 0) printf("execute ");
-		printf("\n");
-		return 0;
-	}
+  if(resultFile != NULL){
+    fprintf(resultFile, "%s \n %d \n %d \n %s", webpage_getURL(pagep), webpage_getDepth(pagep), webpage_getHTMLlen(pagep), webpage_getHTML(pagep));
+		fclose(resultFile);
+    return 0;
+  }
+  else{
+    return 1;
+  }
 }
 
-int main(int argc, char *argv[]){
-	int pos = 0;
-	int idincrement;
-	bool fetchResult;
-	char *seedURL, *result, *pagedir;
-	webpage_t *page;
-	webpage_t *temp; //for breadth depth
-	hashtable_t *visited;
-	queue_t* pageQueue;
-	webpage_t *internalPage; //internal page
-	int maxdepth, currdepth;
-	struct stat stats; //checks if directory is valid
-	bool first = false; //temporary boolean for looping
+int main(int argc, char * argv[]){
+  crawl(argv[1],argv[2],atoi(argv[3]));
+  return 0;
+}
 
-	//checks if there are four arguments 
-	if (argc != 4) {
-        printf("usage: crawler <seedurl> <pagedir> <maxdepth>\n");
-        exit(EXIT_FAILURE);
+/*
+ * Crawls from the seedURL until maxDepth and saves pages in pageDirectory
+ * Based off of pseudocode
+ */
+static void crawl(char* seedURL, char* pageDirectory, const int maxDepth){
+   
+    hashtable_t* visitedURLs = hopen(5);
+
+    if (visitedURLs == NULL){
+        fprintf(stderr, "hashtable memory allocation error\n");
+        exit(5); // exits 5 if hashtable problem
     }
 
-	seedURL = argv[1];
+    queue_t* pagesToCrawl = qopen(); //makes queue for pages that need to be crawled
 
-	pagedir = argv[2];
-
-	//check if the folder exists
-	if (!(stat(pagedir, &stats) == 0 && S_ISDIR(stats.st_mode))) {
-		printf("error: the directory does not exist.\n");
-		printf("usage: crawler <seedurl> <pagedir> <maxdepth>\n");
-        exit(EXIT_FAILURE);
+    if (pagesToCrawl == NULL){ //error check for queue
+        fprintf(stderr, "bag memory allocation error\n");
+        exit(6); // exits 6 if queue memory error
     }
 
-	maxdepth = strtod(argv[3], NULL);
-	//checks if maxdepth is valid
-    if (maxdepth < 0) { //webpage_getDepth(page) < maxdepth
-		printf("error: the maxdepth is invalid.\n");
-        printf("usage: crawler <seedurl> <pagedir> <maxdepth>\n");
-        exit(EXIT_FAILURE);   
+    // if (!hput(visitedURLs, webpage_getURL(seedpage), )){ // insert into hashtable
+    //     // error inserting into the hashtable 
+    //     hashtable_delete(visited, NULL); 
+    //     exit(4);
+    // }
+
+
+    webpage_t* firstURL;
+    firstURL = webpage_new(seedURL, 0, NULL);
+    qput(pagesToCrawl, firstURL); //adds first webpage to queue
+    queueSize = 1;
+    hput(visitedURLs, webpage_getURL(firstURL), webpage_getURL(firstURL), strlen(webpage_getURL(firstURL))); //put firstURL into the hashtable
+
+    int pageID = 1;
+    webpage_t* currPage;
+
+    while(queueSize > 0){
+      currPage = (webpage_t*)qget(pagesToCrawl);
+      queueSize -= 1;
+      if (webpage_fetch(currPage)){
+          fprintf(stdout, "%i\tFetched: %s\n", webpage_getDepth(currPage), webpage_getURL(currPage)); //logging
+          //IMPLEMENT PAGE SAVE
+          pagesave(currPage, pageID, pageDirectory);
+          pageID ++; //adds 1 to id number
+          if (webpage_getDepth(currPage) < maxDepth){
+            fprintf(stdout, "%i\tScanning: %s\n", webpage_getDepth(currPage), webpage_getURL(currPage)); //logging
+            pageScan(currPage, pagesToCrawl, visitedURLs);
+          }
+      }
+      webpage_delete(currPage); //delete current webpage
+      fprintf(stdout, "queueSize: %i\n",queueSize);
     }
+    fprintf(stdout, "Finished while loop.\n");
 
-	currdepth = 0;
-	//create a new page with a depth 0
-	page = webpage_new(seedURL, currdepth, NULL);
+    if(visitedURLs != NULL){
+      fprintf(stdout, "visitedURLs is not NULL.\n");
+      hclose(visitedURLs); //delete hashtable
+    }
+    fprintf(stdout, "Finished hclose.\n");
+    if(pagesToCrawl != NULL){
+      fprintf(stdout, "pagesToCrawl is not NULL.\n");
+      qclose(pagesToCrawl); //deletes queue
+    }
+    fprintf(stdout, "Finished qclose.\n");
+}
 
-	// Fetch the webpage HTML
-	fetchResult = webpage_fetch(page);
+/*
+ * Given a webpage, scan the given page to extract any links (URLs), 
+ * ignoring non-internal URLs; for any URL not already seen before (i.e., not in the hashtable),
+ * add the URL to both the hashtable pagesSeen and to the bag pagesToCrawl
+ *
+ * Based off of pseudocode
+ */
+static void pageScan(webpage_t* page, queue_t* pagesToCrawl, hashtable_t* visitedURLs){
+    char* result;
+    int pos = 0;
 
-	//opening the hash table that stores all the visited webpages
-	visited = hopen(100);
-	
-	//queue of all pages
-	pageQueue = qopen();
-
-	//breadth depth search method
-	if (fetchResult) {
-		// Fetch succeeded, print the HTML
-		//		html = webpage_getHTML(page);
-		//		printf("Webpage HTML:\n%s\n", html);
-		//putting initial element in the queue
-		qput(pageQueue, page);
-		hput(visited, page, seedURL, strlen(seedURL));
-		//hput(visited, page, seedURL, strlen(seedURL));
-		idincrement = 1;
-		pagesave(page, idincrement, pagedir);
-		currdepth += 1;
-		while ((temp = qget(pageQueue)) != NULL && currdepth <= maxdepth) {
-			printf("popped this boi: %s\n", webpage_getURL(temp));
-			//if the currdepth is not the right depth as to where the temporary page is, then increase it. 
-			pos = 0;
-			while ((pos = webpage_getNextURL(temp, pos, &result)) > 0) {
-				//if internal url exists 
-				//printf("%s\n", result);
-				if (IsInternalURL(result)){
-					// Create a new webpage for the internal URL if the webpage has not been visited
-					if (hsearch(visited, searchURL, result, strlen(result)) == NULL){
-						printf("currdepth now: %d\n", currdepth);
-						internalPage = webpage_new(result, currdepth, NULL);
-						webpage_fetch(internalPage);
-						//put the new page in the queue
-						qput(pageQueue, internalPage);
-
-						//mark page as visited
-						hput(visited, internalPage, result, strlen(result)); //YO DJ, not sure if it should be internalPage or result again. 
-						//Check to see which one it should be!
-
-						//saves the page
-						idincrement++;
-						pagesave(internalPage, idincrement, pagedir);
-					}
-				}
-				else {
-					free(result);
-				}
-			}
-			//particular case for the first depth 
-			if (!first) {
-				currdepth++;
-				first = true;
-			}
-			//increments the currdepth to the next required webpage depth
-			else if ((webpage_getDepth(temp) >= currdepth) && first) currdepth = webpage_getDepth(temp) + 1;
-		}
-		
-		fflush(stdout);
-		printf("Visited Hash URLs:\n");
-		fflush(stdout);
-		happly(visited, printURL);
-		
-		//deletes the remaining elements in the queue
-		while((internalPage = (qget(pageQueue))) != NULL){     //Bill added this in!         
-			fflush(stdout);
-			printf("%s\n", webpage_getURL(internalPage));
-			fflush(stdout);                
-      		webpage_delete(internalPage);                                                
-   		}
-
-		qclose(pageQueue); //BILL added this in.
-		hclose(visited);
-
-		webpage_delete(page);
-		exit(EXIT_SUCCESS);
-	} else {
-		qclose(pageQueue);
-		hclose(visited);
-		webpage_delete(page);
-		exit(EXIT_FAILURE);
-	}
+    while ((pos = webpage_getNextURL(page, pos, &result)) > 0){ // while there is another URL in the page
+        if (IsInternalURL(result)) { // 	checks if URL is Internal
+        //BEFORE PUTTING MUST CHECK IF IT'S ALREADY INSIDE
+          if (hsearch(visitedURLs, searchURL, result, strlen(result)) == NULL){
+            if ((hput(visitedURLs, result, result, strlen(result))) == 0){ // inserts URL into hashtable and checks if it worked
+                webpage_t* webpage = webpage_new(result, webpage_getDepth(page) + 1, NULL);//creates a webpage
+                fprintf(stdout, "%i\tFound: %s\n", webpage_getDepth(webpage), result); //logging
+                if(webpage){
+                  qput(pagesToCrawl, webpage); // inserts webpage into queue
+                  queueSize += 1;
+                  fprintf(stdout, "%i\tAdded: %s\n", webpage_getDepth(webpage), result); // logging
+                }
+            }
+            else{ //if hashtable returns false then URL has already been seen
+              fprintf(stdout, "%i\tDuplicate1URL: %s\n", webpage_getDepth(page) + 1, result);
+              free(result); //frees URL
+            }
+          }
+          else { //if hashtable returns false then URL has already been seen
+            fprintf(stdout, "%i\tDuplicate2URL: %s\n", webpage_getDepth(page) + 1, result);
+            free(result); //frees URL
+          }
+        }
+        else { //if URL is external 
+            fprintf(stdout, "%i\tExternalURL: %s\n", webpage_getDepth(page) + 1, result);
+            free(result); //frees URL
+        }
+    }
+    //hput(visitedURLs, webpage_getURL(page), webpage_getURL(page), strlen(webpage_getURL(page)));
 }
