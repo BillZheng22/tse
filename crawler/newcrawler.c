@@ -36,7 +36,7 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname){
   resultFile = fopen(filename, "w");
 
   if(resultFile != NULL){
-    fprintf(resultFile, "%s \n %d \n %d \n %s", webpage_getURL(pagep), webpage_getDepth(pagep), webpage_getHTMLlen(pagep), webpage_getHTML(pagep));
+    fprintf(resultFile, "%s\n%d\n%d\n%s", webpage_getURL(pagep), webpage_getDepth(pagep), webpage_getHTMLlen(pagep), webpage_getHTML(pagep));
 		fclose(resultFile);
     return 0;
   }
