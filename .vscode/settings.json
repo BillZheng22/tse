@@ -1,5 +1,12 @@
 {
     "files.associations": {
-        "hash.h": "c"
+        "hash.h": "c",
+        "pageio.h": "c",
+        "webpage.h": "c",
+        "unistd.h": "c",
+        "string.h": "c",
+        "random": "c",
+        "queue": "c",
+        "stack": "c"
     }
 }

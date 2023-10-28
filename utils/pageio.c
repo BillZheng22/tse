@@ -59,16 +59,63 @@ webpage_t *pageload(int id, char *dirnm){
     loadedFile = fopen(filename, "r");
     if (loadedFile == NULL) {
         perror("Error opening file");
-        return 1; // Return an error code
+        return NULL; // Return an error code
     }
 
-    char * pageURL;
-    fscanf(loadedFile, "%s", pageURL);
+    char url[1024]; // Adjust the size as needed for your URL format
+    int depth;
+    int htmlLen;
 
-    webpage_t * webpage;
-    
-    webpage = webpage_new(pageURL, 0, NULL);
+    if (fscanf(loadedFile, "%1023s", url) != 1 ||
+        fscanf(loadedFile, "%d", &depth) != 1 ||
+        fscanf(loadedFile, "%d", &htmlLen) != 1) {
+          perror("Loaded file wrong.");
+          fclose(loadedFile);
+          return NULL;
+    }
+    // printf("HTML length: %d\n", htmlLen);
+    // fflush(stdout);
+    // Read the HTML content
 
+
+    // char *html = malloc((htmlLen + 1));
+    // if (html == NULL) {
+    //     perror("Memory allocation error");
+    //     fclose(loadedFile);
+    //     return NULL;
+    // }
+
+    int i;
+    int c;
+
+    c = fgetc(loadedFile);
+
+    // for(i = 0; i < 20; i++){
+    //     c = fgetc(loadedFile);
+    //     printf("%c", (char)c);
+    // }
+
+    char html[2*htmlLen+1];
+    for(i = 0; i < htmlLen; i++){
+        c = fgetc(loadedFile);
+        html[i] = c;
+    }
+
+    // while ((c = fgetc(loadedFile)) != EOF) {
+    //     html[i++] = (char)c;
+    // }
+
+    // Null-terminate the string
+    html[htmlLen] = '\0';
+
+    // Close the file
     fclose(loadedFile);
-    return webpage;
+
+    // Now, 'html' contains the entire HTML content
+
+    // Don't forget to free the memory when you're done with 'html'
+    webpage_t *page = webpage_new(url, depth, html);
+    //free(html);
+
+    return page;
 }

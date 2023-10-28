@@ -9,4 +9,4 @@ all: 			$(OFILES)
 	ar cr ../lib/libutils.a $(OFILES)
 
 clean:
-				rm -f webpage.o ../lib/libutils.a
+				rm -f webpage.o pageio.o ../lib/libutils.a
