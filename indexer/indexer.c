@@ -19,13 +19,37 @@
 #include <pageio.h>
 #include <ctype.h>
 
+typedef struct wordmap {
+  char * word; 
+  queue_t * doclist;
+} wordmap_t;
+
+typedef struct counter {
+  char * docid; 
+  int count;
+} counter_t;
+
+bool matchingWordsSearch(void* elementp, const void* searchkeyp) {                     
+  wordmap_t *wordmap = (wordmap_t*) elementp;                                 
+  const char *key = (const char*) searchkeyp;                                          
+  if (elementp == NULL) {                                                               
+    return false;                                                                      
+  }
+  if (strcmp(wordmap->word, key) == 0) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 char* normalizeWord(char* word){                                                       
   int cCounter;                                                                        
   char c;                                                                              
   // Check is word is greater than 3 characters                                        
   int wordLen = strlen(word);                                                          
   if (wordLen < 3){                                                                    
-    return NULL;                                                                       
+    return NULL;
   }                                                                                    
                                                                                        
   // Check is word contains alphanumeric characters                                    
@@ -49,12 +73,24 @@ int main(int argc, char * argv[]){
 
     webpage_t *page = pageload(1, "pages0");
 
+    hashtable_t *index = hopen(100); // change to argv[1] later
+
     int pos = 0;
     char *word = NULL;
     
     while ((pos = webpage_getNextWord(page, pos, &word)) > 0) {
         if (normalizeWord(word) != NULL){
             printf("%s\n", word);
+
+            wordmap_t * input = (wordmap_t *) malloc(sizeof(wordmap_t));
+            input->word = word;
+
+            hput(index, input, input->word, strlen(input->word));
+            if (hsearch(index, matchingWordsSearch, input->word, strlen(input->word))!= NULL) {
+              input->doclist
+            }
+
+
             free(word);
         } else {
             free(word);

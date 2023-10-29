@@ -7,6 +7,8 @@
         "string.h": "c",
         "random": "c",
         "queue": "c",
-        "stack": "c"
+        "stack": "c",
+        "stdio.h": "c",
+        "stdlib.h": "c"
     }
 }
