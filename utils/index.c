@@ -18,6 +18,16 @@
 /*******Global Variables*******/
 typedef hashtable_t index_t;
 
+typedef struct counter {
+  int docid;
+  int count;
+} counter_t;
+
+typedef struct wordmap {
+  char * word;
+  queue_t * doclist;
+} wordmap_t;
+
 /*******index_new()**********/
 index_t* index_new(int numSlots) {
     index_t* index = hopen(numSlots);

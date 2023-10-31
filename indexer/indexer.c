@@ -19,16 +19,19 @@
 #include <pageio.h>
 #include <ctype.h>
 #include <index.h>
+#include <indexio.h>
 
-typedef struct counter {
-  int docid;
-  int count;
-} counter_t;
+// typedef struct counter {
+//   int docid;
+//   int count;
+// } counter_t;
 
-typedef struct wordmap {
-  char * word;
-  queue_t * doclist;
-} wordmap_t;
+// typedef struct wordmap {
+//   char * word;
+//   queue_t * doclist;
+// } wordmap_t;
+
+int total = 0;
 
 static index_t* indexBuild(char* pageDirectory);
 static void indexPage(index_t* index, webpage_t* page, int id);
@@ -96,14 +99,20 @@ int main(int argc, char * argv[]){
 
     index_t* index = indexBuild("pages-depth3");
 
-    happly(index, accessQueues);
+    //happly(index, accessQueues);
+
+    indexsave(index, "pages-depth3");
+
+    index = indexload("pages-depth3");
+
+    indexsave(index, "pages0");
 
     return 0;
 }
 
 static index_t* indexBuild(char* pageDirectory){
     index_t* index = index_new(550); //between 300 and 900 slots 
-    int id = 3;
+    int id = 1;
 
     // char filename[50];
     // sprintf(filename, "../%s/%d", pageDirectory, id);
@@ -112,7 +121,14 @@ static index_t* indexBuild(char* pageDirectory){
     // loadedFile = fopen(filename, "r");
 
     webpage_t* page = pageload(id, pageDirectory);
+    indexPage(index, page, id);
+    
+    id++;
+    page = pageload(id, pageDirectory);
+    indexPage(index, page, id);
 
+    id++;
+    page = pageload(id, pageDirectory);
     indexPage(index, page, id);
 
     //webpage_delete(page);
@@ -121,11 +137,11 @@ static index_t* indexBuild(char* pageDirectory){
 
 void indexPage(index_t* index, webpage_t* page, int id){
     int pos = 0;
-    int c = 0;
+    // int c = 0;
     char *word = NULL;
     int* idp = &id;
     queue_t* queue;
-    counter_t* elem;
+    counter_t* elemc;
     wordmap_t* wmap;
     wordmap_t* wordmap;
     counter_t* counter;
@@ -133,20 +149,21 @@ void indexPage(index_t* index, webpage_t* page, int id){
     //pos = webpage_getNextWord(page, pos, &word);
     while ((pos = webpage_getNextWord(page, pos, &word)) > 0){
         if (normalizeWord(word) != NULL){
-            c++;
+            total++;
             printf("%s\n", word);
 
             if ((wmap = (wordmap_t*)(hsearch((hashtable_t *)index, wordSearch, word, strlen(word)))) != NULL) {
-              //hsearch returns a wordMap that has the word as it's key.
               printf("FOUND in index.\n");
-              ////qsearch the queue of wordMaps for the word.
-                //returns the wordMap structure
-              if((elem = (counter_t*)(qsearch(wmap->doclist, queueSearch, idp))) != NULL){
-                elem->count += 1;
+              if((elemc = (counter_t*)(qsearch(wmap->doclist, queueSearch, idp))) != NULL){
+                elemc->count += 1;
+              } else {
+                //put new counter into the doclist queue
+                //needs to have the new id and a count of 1.
+                counter = (counter_t *) malloc(sizeof(counter_t)+1);
+                counter->docid = id;
+                counter->count = 1;
+                qput(wmap->doclist, counter);
               }
-                //take the wordMaps queue and do another qsearch for docID
-                  //will return counter structure
-                    //then ++ to that element.
               printf("Succeeded hsearch and qsearch.\n");
             } else { //the word is not in the index yet
               printf("NOT FOUND in index yet: %s\n", word);
@@ -172,5 +189,5 @@ void indexPage(index_t* index, webpage_t* page, int id){
         }
         free(word);
     }
-    printf("%d\n", c);
+    printf("%d\n", total);
 }
