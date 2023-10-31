@@ -74,27 +74,14 @@ webpage_t *pageload(int id, char *dirnm){
           fclose(loadedFile);
           return NULL;
     }
-    // printf("HTML length: %d\n", htmlLen);
-    // fflush(stdout);
-    // Read the HTML content
 
-
-    // char *html = malloc((htmlLen + 1));
-    // if (html == NULL) {
-    //     perror("Memory allocation error");
-    //     fclose(loadedFile);
-    //     return NULL;
-    // }
+    char* urlp = malloc(sizeof(url) + 1);
+    urlp = strcpy(urlp, url);
 
     int i;
     int c;
 
     c = fgetc(loadedFile);
-
-    // for(i = 0; i < 20; i++){
-    //     c = fgetc(loadedFile);
-    //     printf("%c", (char)c);
-    // }
 
     char html[2*htmlLen+1];
     for(i = 0; i < htmlLen; i++){
@@ -102,21 +89,20 @@ webpage_t *pageload(int id, char *dirnm){
         html[i] = c;
     }
 
-    // while ((c = fgetc(loadedFile)) != EOF) {
-    //     html[i++] = (char)c;
-    // }
-
     // Null-terminate the string
     html[htmlLen] = '\0';
+
+    char* htmlp = malloc(sizeof(html)+1); //malloc HTML
+    htmlp = strcpy(htmlp, html);
 
     // Close the file
     fclose(loadedFile);
 
-    // Now, 'html' contains the entire HTML content
-
     // Don't forget to free the memory when you're done with 'html'
-    webpage_t *page = webpage_new(url, depth, html);
-    //free(html);
+    webpage_t *page = webpage_new(urlp, depth, htmlp);
+
+    free(urlp);
+    //free(htmlp);
 
     return page;
 }

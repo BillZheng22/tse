@@ -28,6 +28,12 @@ typedef struct wordmap {
   queue_t * doclist;
 } wordmap_t;
 
+void wordmap_delete(void* elemp){
+  wordmap_t* wm = (wordmap_t*) elemp;
+  free(wm->word);
+  qclose(wm->doclist);
+}
+
 /*******index_new()**********/
 index_t* index_new(int numSlots) {
     index_t* index = hopen(numSlots);
@@ -35,6 +41,7 @@ index_t* index_new(int numSlots) {
 }
 /*******index_delete()**********/
 void index_delete(index_t* index){
+    happly(index, wordmap_delete);
     hclose(index);
 }
 
@@ -44,9 +51,9 @@ void index_delete(index_t* index){
 // }
 
 /*******index_insert()**********/
-bool index_insert(index_t* index, char* word, void* item){ //the item is the queue of 
-    return (hput(index,item,word,strlen(word)) == 0);
-}
+// bool index_insert(index_t* index, char* word, void* item){ //the item is the queue of 
+//     return (hput(index,item,word,strlen(word)) == 0);
+// }
 
 
 

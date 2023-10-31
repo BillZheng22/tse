@@ -10,6 +10,7 @@
         "stack": "c",
         "stdio.h": "c",
         "stdlib.h": "c",
-        "ctype.h": "c"
+        "ctype.h": "c",
+        "inttypes.h": "c"
     }
 }

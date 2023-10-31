@@ -80,7 +80,7 @@ webpage_t *webpage_new(char *url, const int depth, char *html) {
 
 void webpage_delete(void *data)
 {
-  webpage_t *page = data;
+  webpage_t *page = (webpage_t*)data;
   if (page != NULL) {
     if (page->url) free(page->url);
     if (page->html) free(page->html);

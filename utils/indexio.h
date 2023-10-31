@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include "index.h"
 
-int32_t indexsave(index_t* index, char *dirnm);
+int32_t indexsave(index_t* index, char *dirnm, char *indexnm);
 
-index_t *indexload(char *dirnm);
+index_t *indexload(char *dirnm, char *indexnm);
 
