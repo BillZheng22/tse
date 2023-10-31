@@ -1,7 +1,7 @@
-https://thayer.github.io/engs50/Examples/names-Makefile 
- 2 
- 481 
- # Makefile for the "names" program that uses the "bag" module.
+https://thayer.github.io/engs50/Examples/names-Makefile
+2
+481
+# Makefile for the "names" program that uses the "bag" module.
 #
 # David Kotz - April 2017
 

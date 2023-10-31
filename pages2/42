@@ -1,7 +1,7 @@
-https://thayer.github.io/engs50/Examples/clean 
- 2 
- 132 
- #!/bin/csh -f
+https://thayer.github.io/engs50/Examples/clean
+2
+132
+#!/bin/csh -f
 set nonomatch
 set echo
 rm -f a.out

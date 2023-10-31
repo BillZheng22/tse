@@ -32,6 +32,7 @@
 // } wordmap_t;
 
 int total = 0;
+int end = 0;
 
 static index_t* indexBuild(char* pageDirectory);
 static void indexPage(index_t* index, webpage_t* page, int id);
@@ -57,15 +58,15 @@ void accessQueues(void * wmp){
 }
 
 bool wordSearch(void* elementp, const void* searchkeyp) {
-  printf("IN WORDSEARCH: %s\n", (const char*)searchkeyp);
+  //printf("IN WORDSEARCH: %s\n", (const char*)searchkeyp);
   wordmap_t* wordmap = (wordmap_t*)elementp;
-  printf("address of wordmap: %p\n", wordmap);
+  //printf("address of wordmap: %p\n", wordmap);
   printf("wordmap key: %s\n", wordmap->word);
   return strcmp(wordmap->word, (const char*)searchkeyp) == 0;
 }
 
 bool queueSearch(void* elementp, const void* searchkeyp) {    
-  printf("In queueSearch.\n");
+  //printf("In queueSearch.\n");
   counter_t* counter = (counter_t*) elementp;
   int searchint = *(int*)searchkeyp;
   return (counter->docid == searchint);
@@ -97,41 +98,47 @@ char* normalizeWord(char* word){
 
 int main(int argc, char * argv[]){
 
-    index_t* index = indexBuild("pages-depth3");
+    end = atoi(argv[1]);
+    printf("END: %d", end);
+
+    index_t* index = indexBuild("pages2");
 
     //happly(index, accessQueues);
 
-    indexsave(index, "pages-depth3");
+    indexsave(index, "pages2");
 
-    index = indexload("pages-depth3");
+    //index = indexload("pages-depth3");
 
-    indexsave(index, "pages0");
+    //indexsave(index, "pages0");
 
     return 0;
 }
 
 static index_t* indexBuild(char* pageDirectory){
-    index_t* index = index_new(550); //between 300 and 900 slots 
+    index_t* index = index_new(900); //between 300 and 900 slots 
     int id = 1;
 
-    // char filename[50];
-    // sprintf(filename, "../%s/%d", pageDirectory, id);
+    FILE * loadedFile;
+    char filename[50];
+    sprintf(filename, "../%s/%d", pageDirectory, id);
 
-    // FILE * loadedFile;
-    // loadedFile = fopen(filename, "r");
+    webpage_t* page;
 
-    webpage_t* page = pageload(id, pageDirectory);
-    indexPage(index, page, id);
-    
-    id++;
-    page = pageload(id, pageDirectory);
-    indexPage(index, page, id);
-
-    id++;
-    page = pageload(id, pageDirectory);
-    indexPage(index, page, id);
-
-    //webpage_delete(page);
+    while ((loadedFile = fopen(filename,"r")) != NULL){ //null check 
+        page = pageload(id, pageDirectory); // Loads a webpage from the document file 'pageDirectory/id'
+        if (page != NULL){ // if null do nothing
+            indexPage(index, page, id);
+            id++;
+            if(id > end){
+              printf("breaking at: %d", id);
+              break;
+            }
+            //webpage_delete(page);
+            fclose(loadedFile);
+            sprintf(filename, "../%s/%d", pageDirectory, id);
+            printf("new File name: %s\n", filename); 
+        }
+    }
     return index;
 }
 
@@ -148,6 +155,7 @@ void indexPage(index_t* index, webpage_t* page, int id){
     
     //pos = webpage_getNextWord(page, pos, &word);
     while ((pos = webpage_getNextWord(page, pos, &word)) > 0){
+        printf("%s\n", word);
         if (normalizeWord(word) != NULL){
             total++;
             printf("%s\n", word);
@@ -184,10 +192,10 @@ void indexPage(index_t* index, webpage_t* page, int id){
               printf("wordmap key: %s\n", wordmap->word);
               //hput wordMap
               hput(index, wordmap, word, strlen(word));
-              printf("address of wordmap: %p\n", wordmap);
+              //printf("address of wordmap: %p\n", wordmap);
             }
         }
         free(word);
     }
-    printf("%d\n", total);
+    printf("TOTAL WORDS: %d\n", total);
 }

@@ -58,8 +58,8 @@ static index_t* indexBuild(char* pageDirectory){
     int id = 1;
     FILE* fp;
     char* filename = (char*)mem_malloc(strlen(pageDirectory) + 12); //allows up to 10 digits in file 
-
     sprintf(filename,"%s/%d",pageDirectory,id);
+    
     webpage_t* page;
 
     while ((fp=fopen(filename,"r"))!=NULL){ //null check 
