@@ -19,9 +19,9 @@
 #include "indexio.h"
 
 int main() {
-    index_t* index = indexload("pages-depth3", "indexnm");
+    index_t* index = indexload("pages-depth3", "FINAL");
 
-    indexsave(index, "pages0", "indexnm0");
+    indexsave(index, "pages1", "FINAL");
     
     return 0;
 }

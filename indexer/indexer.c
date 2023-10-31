@@ -22,7 +22,7 @@
 #include <indexio.h>
 
 int total = 0;
-int end = 0;
+//int end = 0;
 
 static index_t *indexBuild(char *pageDirectory);
 static void indexPage(index_t *index, webpage_t *page, int id);
@@ -96,6 +96,7 @@ char *normalizeWord(char *word)
 
 int main(int argc, char *argv[])
 {
+  char pagedir[50]; // pagedir
   char indexnm[50]; // filename
   // checks if there are 3 arguments
   if (argc != 3)
@@ -103,18 +104,17 @@ int main(int argc, char *argv[])
     printf("usage: indexer <pagedir> <indexnm>\n");
     exit(EXIT_FAILURE);
   }
-  end = atoi(argv[2]);
+  //end = atoi(argv[2]);
   // printf("END: %d", end);
 
-  strcpy(indexnm, argv[1]);
+  strcpy(pagedir, argv[1]);
+  strcpy(indexnm, argv[2]);
 
-  index_t *index = indexBuild("pages-depth3");
+  index_t *index = indexBuild(pagedir);
 
-  // happly(index, accessQueues);
+  indexsave(index, pagedir, indexnm);
 
-  indexsave(index, "pages-depth3", indexnm);
-
-  index = indexload("pages-depth3", indexnm);
+  index = indexload(pagedir, indexnm);
 
   indexsave(index, "pages0", indexnm);
 
@@ -137,12 +137,13 @@ static index_t *indexBuild(char *pageDirectory)
     //page = pageload(id, pageDirectory); // Loads a webpage from the document file 'pageDirectory/id'
     if (page != NULL)
     { // if null do nothing
+      printf("FILE ID RIGHT NOW OVER HERE OMG OMG --------------------> %d\n", id);
       indexPage(index, page, id);
       id++;
-      if(id > end){
-        printf("breaking at: %d", id);
-        break;
-      }
+      // if(id > end){
+      //   printf("breaking at: %d", id);
+      //   break;
+      // }
       //sprintf(filename, "../%s/%d", pageDirectory, id);
       //printf("new File name: %s\n", filename);
     }
@@ -178,7 +179,7 @@ void indexPage(index_t *index, webpage_t *page, int id)
 
       if ((wmap = (wordmap_t *)(hsearch((hashtable_t *)index, wordSearch, word, strlen(word)))) != NULL)
       {
-        printf("FOUND in index.\n");
+        //printf("FOUND in index.\n");
         if ((elemc = (counter_t *)(qsearch(wmap->doclist, queueSearch, idp))) != NULL)
         {
           elemc->count += 1;
