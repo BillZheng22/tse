@@ -74,11 +74,12 @@ int32_t indexsave(index_t* index, char *dirnm){
 }
 
 index_t *indexload(char *dirnm){
-    globalFile = NULL;
+    FILE * globalFile = NULL;
     int id;
     int count;
     char* word = NULL;
     char w[100];
+    char c;
 
     int* idp = &id;
     queue_t* queue;
@@ -87,12 +88,13 @@ index_t *indexload(char *dirnm){
     wordmap_t* wordmap;
     counter_t* counter;
 
-    char delimiter[] = " ";
+    char delimiter[50] = " ";
 
     index_t* index = index_new(550);
 
     char filename[50];
     sprintf(filename, "../%s/indexnm", dirnm);
+
     fflush(stdout);
     printf("%s\n", filename);
     fflush(stdout);
@@ -106,78 +108,83 @@ index_t *indexload(char *dirnm){
     printf("Got here.\n");
     fflush(stdout);
 
+/*
     fflush(stdout);
     printf("address of globalFile: %p\n", globalFile);
     fflush(stdout);
 
-    int c = fgetc(globalFile);
-    printf("%d", c);
+*/
 
+    /*
+          if (fscanf(globalFile, "%c", &c) == NULL) {
+      printf("Error when reading word from file\n");
+      exit(3);
+    }
+    fflush(stdout);
+    printf("%c\n", c);
+    fflush(stdout);
+    */
+    
     // if (fscanf(globalFile, "%99s", w) == 1){
     //   printf("%s", w);
     // } else {
     //       fprintf(stderr, "Error when reading word from file\n");
     //       exit(3); //3 is word loading error
     // }
-    return;
 
     while (!(feof(globalFile))){ //end of file check
         printf("Entered file.\n");
         // word = strtok(NULL, delimiter);
         // printf("%s", word);
-        if (fscanf(globalFile, "%99s", w) == 1){
-          printf("%s", w);
-          word = malloc(strlen(word)+1);
+        if (fscanf(globalFile, "%s", w) == 1){
+          fflush(stdout);
+          printf("%s\n", w);
+          fflush(stdout);
+          word = malloc((strlen(w)+1)*sizeof(char));
           strcpy(word, w);
 
-        //}
-
-        // if (word == NULL) {
-        //     fprintf(stderr, "Error when reading word from file\n");
-        //     exit(3); //3 is word loading error
-        // }
-        //else {
-            while ((fscanf(globalFile, "%d %d ", &id, &count)) == 2) {
-              if ((wmap = (wordmap_t*)(hsearch((hashtable_t *)index, iwordSearch, word, strlen(word)))) != NULL) {
-                printf("FOUND in index.\n");
-                if((elemc = (counter_t*)(qsearch(wmap->doclist, iqueueSearch, idp))) != NULL){
-                  elemc->count = count;
-                } else {
-                  //put new counter into the doclist queue
-                  //needs to have the new id and a count of 1.
-                  counter = (counter_t *) malloc(sizeof(counter_t)+1);
-                  counter->docid = id;
-                  counter->count = count;
-                  qput(wmap->doclist, counter);
-                }
-                printf("Succeeded hsearch and qsearch.\n");
-              } else { //the word is not in the index yet
-                printf("NOT FOUND in index yet: %s\n", word);
-                //open queue
-                queue = qopen();
-                //create counter with id and count
+          while ((fscanf(globalFile, "%d %d ", &id, &count)) == 2) {
+            if ((wmap = (wordmap_t*)(hsearch((hashtable_t *)index, iwordSearch, word, strlen(word)))) != NULL) {
+              printf("FOUND in index.\n");
+              if((elemc = (counter_t*)(qsearch(wmap->doclist, iqueueSearch, idp))) != NULL){
+                elemc->count = count;
+              } else {
+                //put new counter into the doclist queue
+                //needs to have the new id and a count of 1.
                 counter = (counter_t *) malloc(sizeof(counter_t)+1);
                 counter->docid = id;
                 counter->count = count;
-                //add counter to the doclist
-                qput(queue, counter);
-                //create new wordMap
-                wordmap = (wordmap_t *) malloc(sizeof(wordmap_t)+1);
-                //add queue to the wordMap
-                wordmap->word = malloc(strlen(word)+1);
-                strcpy(wordmap->word, word);
-                wordmap->doclist = queue;
-                printf("wordmap key: %s\n", wordmap->word);
-                //hput wordMap
-                hput(index, wordmap, word, strlen(word));
-                // printf("address of wordmap: %p\n", wordmap);
+                qput(wmap->doclist, counter);
               }
+              printf("Succeeded hsearch and qsearch.\n");
+            } else { //the word is not in the index yet
+              printf("NOT FOUND in index yet: %s\n", word);
+              //open queue
+              queue = qopen();
+              //create counter with id and count
+              counter = (counter_t *) malloc(sizeof(counter_t)+1);
+              counter->docid = id;
+              counter->count = count;
+              //add counter to the doclist
+              qput(queue, counter);
+              //create new wordMap
+              wordmap = (wordmap_t *) malloc(sizeof(wordmap_t)+1);
+              //add queue to the wordMap
+              wordmap->word = malloc(strlen(word)+1);
+              strcpy(wordmap->word, word);
+              wordmap->doclist = queue;
+              printf("wordmap key: %s\n", wordmap->word);
+              //hput wordMap
+              hput(index, wordmap, word, strlen(word));
+              // printf("address of wordmap: %p\n", wordmap);
             }
+          }
         } else {
           fprintf(stderr, "Error when reading word from file\n");
           exit(3); //3 is word loading error
         }
         free(word); //frees word each time after use
     }
+    fclose(globalFile);
     return index;
 }
