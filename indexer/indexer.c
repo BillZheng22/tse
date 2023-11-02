@@ -5,8 +5,7 @@
  * Created: 10-24-2023
  * Version: 1.0
  *
- * Description:
- *
+ * Description: a program that implements the pageio.h module
  */
 
 #include <stdio.h>
@@ -22,7 +21,6 @@
 #include <indexio.h>
 
 int total = 0;
-//int end = 0;
 
 static index_t *indexBuild(char *pageDirectory);
 static void indexPage(index_t *index, webpage_t *page, int id);
@@ -54,7 +52,6 @@ void accessQueues(void *wmp)
 bool wordSearch(void *elementp, const void *searchkeyp)
 {
   wordmap_t *wordmap = (wordmap_t *)elementp;
-  //printf("wordmap key: %s\n", wordmap->word);
   return strcmp(wordmap->word, (const char *)searchkeyp) == 0;
 }
 
@@ -140,12 +137,6 @@ static index_t *indexBuild(char *pageDirectory)
       printf("FILE ID RIGHT NOW OVER HERE OMG OMG --------------------> %d\n", id);
       indexPage(index, page, id);
       id++;
-      // if(id > end){
-      //   printf("breaking at: %d", id);
-      //   break;
-      // }
-      //sprintf(filename, "../%s/%d", pageDirectory, id);
-      //printf("new File name: %s\n", filename);
     }
     webpage_delete(page);
   }
@@ -167,9 +158,6 @@ void indexPage(index_t *index, webpage_t *page, int id)
 
   while ((pos = webpage_getNextWord(page, pos, &word)) > 0)
   {
-    // fflush(stdout);
-    // printf("%s\n", word);
-    // fflush(stdout);
     if (normalizeWord(word) != NULL)
     {
       total++;
