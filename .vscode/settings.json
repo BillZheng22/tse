@@ -11,6 +11,8 @@
         "stdio.h": "c",
         "stdlib.h": "c",
         "ctype.h": "c",
-        "inttypes.h": "c"
+        "inttypes.h": "c",
+        "indexio.h": "c",
+        "index.h": "c"
     }
 }
