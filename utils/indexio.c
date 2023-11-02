@@ -50,16 +50,16 @@ void mapPrint(void *wmp)
 
 bool iwordSearch(void *elementp, const void *searchkeyp)
 {
-  printf("IN WORDSEARCH: %s\n", (const char *)searchkeyp);
+  //printf("IN WORDSEARCH: %s\n", (const char *)searchkeyp);
   wordmap_t *wordmap = (wordmap_t *)elementp;
   //  printf("address of wordmap: %p\n", wordmap);
-  printf("wordmap key: %s\n", wordmap->word);
+  //printf("wordmap key: %s\n", wordmap->word);
   return strcmp(wordmap->word, (const char *)searchkeyp) == 0;
 }
 
 bool iqueueSearch(void *elementp, const void *searchkeyp)
 {
-  printf("In queueSearch.\n");
+  //printf("In queueSearch.\n");
   counter_t *counter = (counter_t *)elementp;
   int searchint = *(int *)searchkeyp;
   return (counter->docid == searchint);

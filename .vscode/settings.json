@@ -13,6 +13,8 @@
         "ctype.h": "c",
         "inttypes.h": "c",
         "indexio.h": "c",
-        "index.h": "c"
+        "index.h": "c",
+        "queue.h": "c",
+        "stdbool.h": "c"
     }
 }

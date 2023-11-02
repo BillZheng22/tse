@@ -19,17 +19,16 @@
 #include "indexio.h"
 
 int main() {
-    index_t* index = indexload("pages-depth3", "FINAL");
+    index_t* index = indexload("pages0", "indexnm");
 
-    indexsave(index, "pages2", "FINAL");
+    indexsave(index, "pages0", "indexnm");
 
-    index = indexload("pages2", "FINAL");
+    index = indexload("pages0", "indexnm");
 
-    indexsave(index, "pages2", "FINALCHECK");
+    indexsave(index, "pages0", "indexnm");
 
-
-    const char *file1_path = "../pages2/FINAL";
-    const char *file2_path = "../pages2/FINALCHECK";
+    const char *file1_path = "../pages0/indexnm";
+    const char *file2_path = "../pages0/indexnm";
 
     // Open the two files for reading
     FILE *file1 = fopen(file1_path, "r");
