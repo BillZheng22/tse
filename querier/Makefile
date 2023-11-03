@@ -4,7 +4,7 @@ LIBS=-lutils -lcurl
 
 all: query
 
-indexer:
+query:
 	gcc $(CFLAGS) query.c $(LIBS) -o $@
 
 clean:

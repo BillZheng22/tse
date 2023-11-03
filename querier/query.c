@@ -21,9 +21,15 @@
 
 static bool isValid(char* str);
 static void processInput(index_t* index, char* query);
-int main();
+int min(int a, int b);
 bool iwordSearch(void *elementp, const void *searchkeyp);
 bool iqueueSearch(void *elementp, const void *searchkeyp);
+
+
+// standard min function
+int min(int a, int b) {
+    return (a < b) ? a : b;
+}
 
 /* Local helper function that checks if an inputted string is empty and only contains letters*/
 static bool isValid(char* str) {
