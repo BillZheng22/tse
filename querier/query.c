@@ -42,8 +42,9 @@ static bool isValid(char* str) {
         bool isSpace = true;
         bool isAlpha = true;
 
-        // Iterates through every character in str and checks if it is white spce
-        for (int i = 0; i < strlen(str); i++) {
+        // Iterates through every character in str and checks if it is white space
+        int i;
+        for (i = 0; i < strlen(str); i++) {
 
             char c = str[i];
             if (!isspace(c)) {
@@ -70,65 +71,122 @@ static bool isValid(char* str) {
     }
 }
 
+//checks the valid query for ANDs and ORs
+static bool queryCheck(char* str){
+    //printf("in queryCheck.\n");
+    bool prevOr = false;
+    bool prevAnd = false;  
+
+    char* query = malloc(strlen(str)+1);
+    strcpy(query, str);
+
+    int wc = 0;
+
+    char * qword = strtok(query, " ");
+    // loop through the string to extract all other tokens
+    while(qword != NULL) {
+        wc++;
+        qword = strtok(NULL, " ");
+    }
+    free(query);
+
+
+    //printf("WC: %d\n", wc);
+    int i;
+    char* word = strtok(str, " ");
+    // Iterates through array
+    for (i = 0; i < wc; i++) {
+        //printf("Index: %d\n", i);
+        //printf("WORD IS: %s\n", word);
+
+        // If the current word is 'or'
+        if (strcmp(word, "or") == 0) {
+            //printf("isOR.\n");
+            
+            if ((i == 0) || (prevOr) || (prevAnd) || (i == (wc-1))){
+                //printf("wrong OR.\n");
+                return false;
+            }
+
+            prevOr = true;
+
+        // If the current word is 'and'
+        } else if (strcmp(word, "and") == 0){
+            //printf("isAND.\n");
+            if ((i == 0) || (prevOr) || (prevAnd) || (i == (wc-1))){
+                //printf("wrong AND.\n");
+                return false;
+            }
+            prevAnd = true;
+        } else {
+            prevOr = false;
+            prevAnd = false;
+        }
+        word = strtok(NULL, " ");
+    }
+    //printf("Good AND OR query.\n");
+    return true;
+}
+
 static void processInput(index_t* index, char* query) {
     //might need to clean the query to make sure there's only 1 space between each normalized word.
     //int numWords = 0;
     
-    int id = 1;
+    int id;
 
     wordmap_t* wmap;
     counter_t* elemc;
-    int* idp = &id;
+    int* idp;
     //int count = 0;
     int minCount = 10000000;
 
-    // Extract the first token
-    char * word = strtok(query, " ");
-    // loop through the string to extract all other tokens
-    while(word != NULL) {
-        //numWords++;
-        
-        if ((wmap = (wordmap_t *)(hsearch((hashtable_t *)index, iwordSearch, word, strlen(word)))) != NULL){
-            if ((elemc = (counter_t *)(qsearch(wmap->doclist, iqueueSearch, idp))) != NULL){
-                minCount = min(minCount, elemc->count);
-                printf("%s:%d ", word, elemc->count);
+    int numDocs = 7; //hard coded
+    char resetQuery[10000];
+    strcpy(resetQuery, query);
+
+    for (id = 1; id < numDocs+1; id++){
+        idp = &id;
+        strcpy(query, resetQuery);
+        printf("DocID: %d -- ", id);
+
+        // Extract the first token
+        char * word = strtok(query, " ");
+        // loop through the string to extract all other tokens
+        while(word != NULL) {
+            if ((wmap = (wordmap_t *)(hsearch((hashtable_t *)index, iwordSearch, word, strlen(word)))) != NULL){
+                //if the word exists in the index, look into specific documents.
+
+                //iterate through doclist queue of counters within wmap.
+
+                if ((elemc = (counter_t *)(qsearch(wmap->doclist, iqueueSearch, idp))) != NULL){
+                    minCount = min(minCount, elemc->count);
+                    printf("%s:%d ", word, elemc->count);
+                } else {
+                    //if the word doesn't exist in the index, do something depending on AND or OR.
+                    minCount = 0;
+                    printf("%s:0 ", word);
+                }
+            } else {
+                //if the word doesn't exist in the index, do something depending on AND or OR.
+                minCount = 0;
+                printf("%s:0 ", word);
             }
-        } else {
-            minCount = 0;
-            printf("%s:0 ", word);
+            
+            word = strtok(NULL, " ");
         }
         
-        word = strtok(NULL, " ");
+        //print everything at the very end?
+        //if score is 0, print nothing.
+        printf("-- %d\n", minCount);
+
     }
-    
-    //char** words = splitString(query, &numWords);
-
-
-    // int i;
-    // for (i = 0; i < numWords; i++){
-    //     char* word = words[i];
-
-    //     if ((wmap = (wordmap_t *)(hsearch((hashtable_t *)index, iwordSearch, word, strlen(word)))) != NULL){
-    //         if ((elemc = (counter_t *)(qsearch(wmap->doclist, iqueueSearch, idp))) != NULL){
-    //             minCount = min(minCount, elemc->count);
-    //             printf("%s:%d ", word, elemc->count);
-    //         }
-    //     } else {
-    //         minCount = 0;
-    //         printf("%s:0 ", word);
-    //     }
-    // }
-    printf(" -- %d\n", minCount);
 }
 
-//process input function:
-//looks for word in the index, gets the wordmap
-//from the wordmap, get counter
-//from the counter, get the docID and then the count
+//need another method to check if word is less than 3 characters and if it is AND or OR
 
 int main(){
     char input[5000]; // Define a character array to store the line
-    index_t* index = indexload("pages0", "index0");
+    index_t* index = indexload("pages1", "index1");
 
     printf("> ");
     while (!feof(stdin) && fgets(input, sizeof(input), stdin)) {
@@ -145,8 +203,17 @@ int main(){
             }
             printf("%s\n",input);
 
-            //for each input, process the input, make a new function
-            processInput(index, input);
+            char* q = malloc(strlen(input)+1);
+            strcpy(q, input);
+            //check the input again for ANDs and ORs
+            if(queryCheck(q)){
+                //for each valid input, process the input
+                printf("%s\n",input);
+                processInput(index, input);
+            } else {
+                printf("[invalid query]\n");
+            }
+            free(q);
         }
 
         printf("> ");
