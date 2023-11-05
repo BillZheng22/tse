@@ -18,6 +18,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <webpage.h>
+#include <pageio.h>
+
+int numDocs = 0;
 
 static bool isValid(char* str);
 static void processInput(index_t* index, char* query);
@@ -36,7 +40,7 @@ static bool isValid(char* str) {
     
     // If input is less than 1 char, it's empty 
     if (strlen(str) < 1) {
-        printf("[invalid query]: Empty input.\n");
+        printf("[Invalid Query]: Empty input.\n");
         return false;
     } else {
         bool isSpace = true;
@@ -57,7 +61,7 @@ static bool isValid(char* str) {
             
             // Non-alphabetical input
             if (!isAlpha) {
-                printf("[invalid query]: Input is non-alphabetical.\n");
+                printf("[Invalid Query]: Input is non-alphabetical.\n");
                 return false;
             }
         }
@@ -65,7 +69,7 @@ static bool isValid(char* str) {
         if (!isSpace) {
             return true;
         } else {
-            printf("[invalid query]: Empty input.\n");
+            printf("[Invalid Query]: Empty input.\n");
             return false;
         }
     }
@@ -138,55 +142,115 @@ static void processInput(index_t* index, char* query) {
     counter_t* elemc;
     int* idp;
     //int count = 0;
-    int minCount = 10000000;
+    int runningRank = 1000000;
+    int finalRank = 0;
+    bool hasOr = false;
 
-    int numDocs = 7; //hard coded
     char resetQuery[10000];
     strcpy(resetQuery, query);
 
-    for (id = 1; id < numDocs+1; id++){
+    for (id = 1; id <= numDocs; id++){
         idp = &id;
         strcpy(query, resetQuery);
-        printf("DocID: %d -- ", id);
+        //printf("DocID: %d\n", id);
+
+        runningRank = 1000000;
+        finalRank = 0;
+        hasOr = false;
 
         // Extract the first token
         char * word = strtok(query, " ");
         // loop through the string to extract all other tokens
         while(word != NULL) {
+
+            //if the query word is "and" just skip over it.
+            if (strcmp(word, "and") ==0){
+                word = strtok(NULL, " ");
+                continue;           
+            }
+
+            //if the query word is "or" work on updating to finalRank.
+            if (strcmp(word, "or") ==0){
+                //printf("hasOr is: %s\n", hasOr ? "true" : "false");
+                if(hasOr == false){
+                    finalRank = runningRank;
+                    runningRank = 1000000;
+                } else {
+                    finalRank += runningRank;
+                    runningRank = 1000000;
+                }
+                hasOr = true;
+                word = strtok(NULL, " ");
+                continue;
+            }
+
             if ((wmap = (wordmap_t *)(hsearch((hashtable_t *)index, iwordSearch, word, strlen(word)))) != NULL){
                 //if the word exists in the index, look into specific documents.
 
                 //iterate through doclist queue of counters within wmap.
-
                 if ((elemc = (counter_t *)(qsearch(wmap->doclist, iqueueSearch, idp))) != NULL){
-                    minCount = min(minCount, elemc->count);
-                    printf("%s:%d ", word, elemc->count);
+                    runningRank = min(runningRank, elemc->count);
+                    //printf("%s:%d ", word, elemc->count);
                 } else {
                     //if the word doesn't exist in the index, do something depending on AND or OR.
-                    minCount = 0;
-                    printf("%s:0 ", word);
+                    runningRank = 0;
+                    //printf("%s:0 ", word);
                 }
             } else {
                 //if the word doesn't exist in the index, do something depending on AND or OR.
-                minCount = 0;
-                printf("%s:0 ", word);
+                runningRank = 0;
+                //printf("%s:0 ", word);
             }
-            
+            //printf("Running Rank: %d\n", runningRank);
             word = strtok(NULL, " ");
         }
-        
-        //print everything at the very end?
-        //if score is 0, print nothing.
-        printf("-- %d\n", minCount);
-
+        if (hasOr){
+            finalRank += runningRank;
+        } else {
+            finalRank = runningRank;
+        }
+        if(finalRank != 0){
+            printf("rank: %d doc: %d\n", finalRank, id);
+        }
     }
 }
 
 //need another method to check if word is less than 3 characters and if it is AND or OR
 
-int main(){
+int main(int argc, char *argv[]){
+    numDocs = 0;
+
+    if (argc != 3)
+    {
+        printf("usage: query <pageDirectory> <indexFile>\n");
+        exit(EXIT_FAILURE);
+    }
+
+    char pagedir[50]; // pagedir
+    char indexnm[50]; // filename
+    strcpy(pagedir, argv[1]);
+    strcpy(indexnm, argv[2]);
+
+    int id = 1;
+    webpage_t *page;
+    printf("numDocs: %d.\n", numDocs);
+    while ((page = pageload(id, pagedir)) != NULL)
+    {// null check
+        //page = pageload(id, pageDirectory); // Loads a webpage from the document file 'pageDirectory/id'
+        if (page != NULL)
+        { // if null do nothing
+        numDocs++;
+        id++;
+        }
+        webpage_delete(page);
+    }
+    webpage_delete(page);
+
+    printf("numDocs: %d.\n", numDocs);
+
     char input[5000]; // Define a character array to store the line
-    index_t* index = indexload("pages1", "index1");
+
+    index_t* index = indexload(pagedir, indexnm);
 
     printf("> ");
     while (!feof(stdin) && fgets(input, sizeof(input), stdin)) {
@@ -201,22 +265,22 @@ int main(){
             for (int i = 0; i < strlen(input); i++) {
                 input[i] = tolower(input[i]);
             }
-            printf("%s\n",input);
+            //printf("%s\n",input);
 
             char* q = malloc(strlen(input)+1);
             strcpy(q, input);
             //check the input again for ANDs and ORs
             if(queryCheck(q)){
                 //for each valid input, process the input
-                printf("%s\n",input);
+                //printf("%s\n",input);
                 processInput(index, input);
             } else {
-                printf("[invalid query]\n");
+                printf("[Invalid Query]: Misplaced 'and's and 'or's.\n");
             }
             free(q);
         }
-
         printf("> ");
     }
+    index_delete(index); // finally close the index
     return 0;
 }
