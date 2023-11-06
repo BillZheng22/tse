@@ -59,7 +59,7 @@ webpage_t *pageload(int id, char *dirnm){
     sprintf(filename, "../%s/%d", dirnm, id);
     loadedFile = fopen(filename, "r");
     if (loadedFile == NULL) {
-        perror("Error opening file");
+        //perror("Error opening file");
         return NULL; // Return an error code
     }
 

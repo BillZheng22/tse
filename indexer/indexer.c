@@ -111,9 +111,9 @@ int main(int argc, char *argv[])
 
   indexsave(index, pagedir, indexnm);
 
-  index = indexload(pagedir, indexnm);
+  // index = indexload(pagedir, indexnm);
 
-  indexsave(index, "pages0", indexnm);
+  // indexsave(index, "pages0", indexnm);
 
   return 0;
 }

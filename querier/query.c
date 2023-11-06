@@ -24,7 +24,7 @@
 int numDocs = 0;
 
 static bool isValid(char* str);
-static void processInput(index_t* index, char* query);
+static void processInput(index_t* index, char* query, char* pagedir);
 int min(int a, int b);
 bool iwordSearch(void *elementp, const void *searchkeyp);
 bool iqueueSearch(void *elementp, const void *searchkeyp);
@@ -132,10 +132,12 @@ static bool queryCheck(char* str){
     return true;
 }
 
-static void processInput(index_t* index, char* query) {
+static void processInput(index_t* index, char* query, char* pagedir) {
     //might need to clean the query to make sure there's only 1 space between each normalized word.
     //int numWords = 0;
-    
+
+    webpage_t* page;
+
     int id;
 
     wordmap_t* wmap;
@@ -150,6 +152,7 @@ static void processInput(index_t* index, char* query) {
     strcpy(resetQuery, query);
 
     for (id = 1; id <= numDocs; id++){
+        page = pageload(id, pagedir);
         idp = &id;
         strcpy(query, resetQuery);
         //printf("DocID: %d\n", id);
@@ -210,8 +213,9 @@ static void processInput(index_t* index, char* query) {
             finalRank = runningRank;
         }
         if(finalRank != 0){
-            printf("rank: %d doc: %d\n", finalRank, id);
+            printf("rank: %d doc: %d %s\n", finalRank, id, webpage_getURL(page));
         }
+        webpage_delete(page);
     }
 }
 
@@ -273,7 +277,7 @@ int main(int argc, char *argv[]){
             if(queryCheck(q)){
                 //for each valid input, process the input
                 //printf("%s\n",input);
-                processInput(index, input);
+                processInput(index, input, pagedir);
             } else {
                 printf("[Invalid Query]: Misplaced 'and's and 'or's.\n");
             }

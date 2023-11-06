@@ -114,19 +114,19 @@ index_t *indexload(char *dirnm, char *indexnm)
     perror("Error opening file");
     return NULL;
   }
-  fflush(stdout);
-  printf("Got here.\n");
-  fflush(stdout);
+  // fflush(stdout);
+  // printf("Got here.\n");
+  // fflush(stdout);
 
   while (!(feof(globalFile)))
   { // end of file check
-    printf("Entered file.\n");
+    //printf("Entered file.\n");
     // word = strtok(NULL, delimiter);
     // printf("%s", word);
     if (fscanf(globalFile, "%s", w) == 1)
     {
       fflush(stdout);
-      printf("%s\n", w);
+      //printf("%s\n", w);
       fflush(stdout);
       word = malloc((strlen(w) + 1) * sizeof(char));
       strcpy(word, w);
@@ -135,7 +135,7 @@ index_t *indexload(char *dirnm, char *indexnm)
       {
         if ((wmap = (wordmap_t *)(hsearch((hashtable_t *)index, iwordSearch, word, strlen(word)))) != NULL)
         {
-          printf("FOUND in index.\n");
+          //printf("FOUND in index.\n");
           if ((elemc = (counter_t *)(qsearch(wmap->doclist, iqueueSearch, idp))) != NULL)
           {
             elemc->count = count;
@@ -149,11 +149,11 @@ index_t *indexload(char *dirnm, char *indexnm)
             counter->count = count;
             qput(wmap->doclist, counter);
           }
-          printf("Succeeded hsearch and qsearch.\n");
+          //printf("Succeeded hsearch and qsearch.\n");
         }
         else
         { // the word is not in the index yet
-          printf("NOT FOUND in index yet: %s\n", word);
+          //printf("NOT FOUND in index yet: %s\n", word);
           // open queue
           queue = qopen();
           // create counter with id and count
@@ -168,7 +168,7 @@ index_t *indexload(char *dirnm, char *indexnm)
           wordmap->word = malloc(strlen(word) + 1);
           strcpy(wordmap->word, word);
           wordmap->doclist = queue;
-          printf("wordmap key: %s\n", wordmap->word);
+          //printf("wordmap key: %s\n", wordmap->word);
           // hput wordMap
           hput(index, wordmap, word, strlen(word));
           // printf("address of wordmap: %p\n", wordmap);
