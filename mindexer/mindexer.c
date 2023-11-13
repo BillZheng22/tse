@@ -59,6 +59,7 @@ bool queueSearch(void *elementp, const void *searchkeyp){
     return (counter->docid == searchint);
 }
 
+/* makes the word lowercase */
 char *normalizeWord(char *word){
     int cCounter;
     char c;
@@ -86,18 +87,32 @@ int main(int argc, char *argv[]){
     char pagedir[50]; // pagedir
     char indexnm[50]; // filename
     int threadnum;    //number of threads 
+    pthread_t threads[threadnum];
 
     // checks if there are 3 arguments
-    if (argc != 4)
-    {
-    printf("usage: indexer <pagedir> <indexnm> <threadnum>\n");
-    exit(EXIT_FAILURE);
+    if (argc != 4) {
+        printf("usage: indexer <pagedir> <indexnm> <threadnum>\n");
+        exit(EXIT_FAILURE);
     }
     //string to int
     threadnum = atoi(argv[3]);
     //set the variables
     strcpy(pagedir, argv[1]);
     strcpy(indexnm, argv[2]);
+
+    int i; //incrementer
+    for (i = 0; i < threadnum; i++) {
+        if(pthread_create(&threads[i],NULL,tfunc1,lht)!=0) {
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int j;
+    for (j = 0; j < threadnum; j++) {
+        if (pthread_join(threads[i], NULL) != 0) {
+            exit(EXIT_FAILURE);
+        }
+    }
 
     index_t *index = indexBuild(pagedir);
 
@@ -127,7 +142,6 @@ static index_t *indexBuild(char *pageDirectory){
 
 void indexPage(index_t *index, webpage_t *page, int id) {
     int pos = 0;
-    // int c = 0;
     char *word = NULL;
     int *idp = &id;
     queue_t *queue;
