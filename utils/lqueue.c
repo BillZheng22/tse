@@ -29,6 +29,7 @@ lqueue_t* lqopen(void) {
 void lqclose(lqueue_t *lqp) {
     pthread_mutex_destroy(&(((lqueue_s *)lqp)->mutex));
     qclose((((lqueue_s *)lqp)->queue));
+    free(lqp);
 }
 
 /*
@@ -62,6 +63,16 @@ void* lqsearch(lqueue_t *lqp,
 							bool (*searchfn)(void* elementp,const void* keyp),
 							const void* skeyp){
     return qsearch(((lqueue_s *)lqp)->queue, searchfn, skeyp);
+}
+
+/* locks the mutex in the lqueue structure */
+void locklqueue(lqueue_t *lqp) {
+    pthread_mutex_lock(&(((lqueue_s *)lqp)->mutex));
+}
+
+/* locks the mutex in the lqueue structure */
+void unlocklqueue(lqueue_t *lqp) {
+    pthread_mutex_unlock(&(((lqueue_s *)lqp)->mutex));
 }
 
 

@@ -42,4 +42,10 @@ void* lqsearch(lqueue_t *lqp,
 							bool (*searchfn)(void* elementp,const void* keyp),
 							const void* skeyp);
 
+/* locks the mutex in the lqueue structure */
+void locklqueue(lqueue_t *lqp);
+
+/* locks the mutex in the lqueue structure */
+void unlocklqueue(lqueue_t *lqp);
+
 
