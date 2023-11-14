@@ -21,10 +21,13 @@
 #include <mindexio.h>
 #include <pthread.h>
 
+/* Global Variables */
 static int total = 0;
-static pthread_t mutex; //mutex to control the next file to be indexed
+static int id = 1;
+static char pagedir[50]; // pagedir
+static pthread_mutex_t mutex; //mutex to control the next file to be indexed
 
-static mindex_t *mindexBuild(char *pageDirectory);
+static mindex_t *mindexBuild(int threadnum);
 static void mindexPage(mindex_t *index, webpage_t *page, int id);
 
 void printCounts(void *cp) {
@@ -82,23 +85,48 @@ char *normalizeWord(char *word){
     return word;
 }
 
-static mindex_t *mindexBuild(char *pageDirectory){
-    //make a new index up here
-    mindex_t *index = mindex_new(500); // between 300 and 900 slots
-
-    int id = 1;
+//concurrent threads sharing the index to build the pages
+void *coindexBuild(void *argp) {
+    //locks the mutex so the current thread can only scan the pages
+    pthread_mutex_lock(&mutex);
+    //cast the argp to an index
+    mindex_t * index = (mindex_t *) argp;
     webpage_t *page;
-
-    while ((page = pageload(id, pageDirectory)) != NULL) {// null check
+    while ((page = pageload(id, pagedir)) != NULL) {// null check
         //page = pageload(id, pageDirectory); // Loads a webpage from the document file 'pageDirectory/id'
         if (page != NULL){ // if null do nothing
-            printf("FILE ID RIGHT NOW OVER HERE OMG OMG --------------------> %d\n", id);
             mindexPage(index, page, id);
             id++;
         }
         webpage_delete(page);
-        }
+    }
     webpage_delete(page);
+
+    //unlocks the mutex so that other threads scan the pages
+    pthread_mutex_unlock(&mutex);
+    return (void*)0;
+}
+
+static mindex_t *mindexBuild(int threadnum){
+    //make a new index up here
+    mindex_t *index = mindex_new(500); // between 300 and 900 slots
+    //initialize the mutex
+    pthread_mutex_init(&mutex, NULL);
+    pthread_t threads[threadnum]; //array of threads
+    int i; //incrementer
+    //make the threads
+    for (i = 0; i < threadnum; i++) {
+        if(pthread_create(&threads[i],NULL,coindexBuild,index)!=0) {
+            exit(EXIT_FAILURE);
+        }
+    }
+    int j; //incrementer for the threads to run their functions
+    for (j = 0; j < threadnum; j++) {
+        if (pthread_join(threads[j], NULL) != 0) {
+            exit(EXIT_FAILURE);
+        }
+    }
+    pthread_mutex_destroy(&mutex);
     return index;
 }
 
@@ -160,45 +188,24 @@ void mindexPage(mindex_t *index, webpage_t *page, int id) {
     printf("TOTAL WORDS: %d\n", total);
 }
 
-void *coindexBuild(void *argp1) {
-    pthread_mutex_lock(&mutex);
-
-    pthread_mutex_unlock(&mutex);
-    return (void*)0;
-}
-
 int main(int argc, char *argv[]){
-    char pagedir[50]; // pagedir
     char indexnm[50]; // filename
     int threadnum;    //number of threads 
     //string to int
     threadnum = atoi(argv[3]);
-    pthread_t threads[threadnum]; //array of threads
 
     // checks if there are 3 arguments
     if (argc != 4) {
         printf("usage: mindexer <pagedir> <indexnm> <threadnum>\n");
-        exit(EXIT_FAILURE);
+        exit(EXIT_SUCCESS);
     }
 
     //set the variables
     strcpy(pagedir, argv[1]);
     strcpy(indexnm, argv[2]);
 
-    int i; //incrementer
-    for (i = 0; i < threadnum; i++) {
-        if(pthread_create(&threads[i],NULL,coindexBuild,pagedir)!=0) {
-            exit(EXIT_FAILURE);
-        }
-    }
-    int j; //incrementer for the threads to run their functions
-    for (j = 0; j < threadnum; j++) {
-        if (pthread_join(threads[j], NULL) != 0) {
-            exit(EXIT_FAILURE);
-        }
-    }
     //builds the index
-    mindex_t *index = mindexBuild(pagedir);
+    mindex_t *index = mindexBuild(threadnum);
     //saves the index
     mindexsave(index, pagedir, indexnm);
 
