@@ -13,25 +13,25 @@
 #include <string.h>
 #include <stdbool.h>
 #include <webpage.h>
-#include <queue.h>
-#include <hash.h>
+#include <lqueue.h>
+#include <lhash.h>
 #include <pageio.h>
 #include <ctype.h>
-#include <index.h>
-#include <indexio.h>
+#include <mindex.h>
+#include <mindexio.h>
 #include <pthread.h>
 
 static int total = 0;
+static pthread_t mutex; //mutex to control the next file to be indexed
 
-static index_t *indexBuild(char *pageDirectory);
-static void indexPage(index_t *index, webpage_t *page, int id);
+static mindex_t *mindexBuild(char *pageDirectory);
+static void mindexPage(mindex_t *index, webpage_t *page, int id);
 
 void printCounts(void *cp) {
     counter_t *c = (counter_t *)cp;
-    if (c == NULL)
-    {
-    printf("doclist is empty.");
-    return;
+    if (c == NULL){
+        //printf("doclist is empty.\n");
+        return;
     }
     printf("docID=%d, count=%d\n", c->docid, c->count);
     return;
@@ -39,12 +39,11 @@ void printCounts(void *cp) {
 
 void accessQueues(void *wmp){
     wordmap_t *wm = (wordmap_t *)wmp;
-    if (wm == NULL)
-    {
-    printf("wordmap is empty.");
-    return;
+    if (wm == NULL) {
+        //printf("wordmap is empty.\n");
+        return;
     }
-    qapply(wm->doclist, printCounts);
+    lqapply(wm->doclist, printCounts);
     return;
 }
 
@@ -83,55 +82,18 @@ char *normalizeWord(char *word){
     return word;
 }
 
-int main(int argc, char *argv[]){
-    char pagedir[50]; // pagedir
-    char indexnm[50]; // filename
-    int threadnum;    //number of threads 
-    pthread_t threads[threadnum];
+static mindex_t *mindexBuild(char *pageDirectory){
+    //make a new index up here
+    mindex_t *index = mindex_new(500); // between 300 and 900 slots
 
-    // checks if there are 3 arguments
-    if (argc != 4) {
-        printf("usage: indexer <pagedir> <indexnm> <threadnum>\n");
-        exit(EXIT_FAILURE);
-    }
-    //string to int
-    threadnum = atoi(argv[3]);
-    //set the variables
-    strcpy(pagedir, argv[1]);
-    strcpy(indexnm, argv[2]);
-
-    int i; //incrementer
-    for (i = 0; i < threadnum; i++) {
-        if(pthread_create(&threads[i],NULL,tfunc1,lht)!=0) {
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    int j;
-    for (j = 0; j < threadnum; j++) {
-        if (pthread_join(threads[i], NULL) != 0) {
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    index_t *index = indexBuild(pagedir);
-
-    indexsave(index, pagedir, indexnm);
-
-    return 0;
-}
-
-static index_t *indexBuild(char *pageDirectory){
-    index_t *index = index_new(500); // between 300 and 900 slots
     int id = 1;
-
     webpage_t *page;
 
     while ((page = pageload(id, pageDirectory)) != NULL) {// null check
         //page = pageload(id, pageDirectory); // Loads a webpage from the document file 'pageDirectory/id'
         if (page != NULL){ // if null do nothing
             printf("FILE ID RIGHT NOW OVER HERE OMG OMG --------------------> %d\n", id);
-            indexPage(index, page, id);
+            mindexPage(index, page, id);
             id++;
         }
         webpage_delete(page);
@@ -140,26 +102,25 @@ static index_t *indexBuild(char *pageDirectory){
     return index;
 }
 
-void indexPage(index_t *index, webpage_t *page, int id) {
+void mindexPage(mindex_t *index, webpage_t *page, int id) {
     int pos = 0;
     char *word = NULL;
     int *idp = &id;
-    queue_t *queue;
+    lqueue_t *queue;
     counter_t *elemc;
     wordmap_t *wmap;
     wordmap_t *wordmap;
     counter_t *counter;
 
-    while ((pos = webpage_getNextWord(page, pos, &word)) > 0)
-    {
+    while ((pos = webpage_getNextWord(page, pos, &word)) > 0){
     if (normalizeWord(word) != NULL){
         total++;
         fflush(stdout);
         printf("%s\n", word);
         fflush(stdout);
 
-        if ((wmap = (wordmap_t *)(hsearch((hashtable_t *)index, wordSearch, word, strlen(word)))) != NULL){
-        if ((elemc = (counter_t *)(qsearch(wmap->doclist, queueSearch, idp))) != NULL){
+        if ((wmap = (wordmap_t *)(lhsearch((lhash_t *)index, wordSearch, word, strlen(word)))) != NULL){
+        if ((elemc = (counter_t *)(lqsearch(wmap->doclist, queueSearch, idp))) != NULL){
             elemc->count += 1;
         }
         else {
@@ -168,20 +129,20 @@ void indexPage(index_t *index, webpage_t *page, int id) {
             counter = (counter_t *)malloc(sizeof(counter_t) + 1);
             counter->docid = id;
             counter->count = 1;
-            qput(wmap->doclist, counter);
+            lqput(wmap->doclist, counter);
         }
         // printf("Succeeded hsearch and qsearch.\n");
         }
         else { // the word is not in the index yet
             printf("NOT FOUND in index yet: %s\n", word);
             // open queue
-            queue = qopen();
+            queue = lqopen();
             // create counter with id and count
             counter = (counter_t *)malloc(sizeof(counter_t) + 1);
             counter->docid = id;
             counter->count = 1;
             // add counter to the doclist
-            qput(queue, counter);
+            lqput(queue, counter);
             // create new wordMap
             wordmap = (wordmap_t *)malloc(sizeof(wordmap_t) + 1);
             // add queue to the wordMap
@@ -190,11 +151,56 @@ void indexPage(index_t *index, webpage_t *page, int id) {
             wordmap->doclist = queue;
             printf("wordmap key: %s\n", wordmap->word);
             // hput wordMap
-            hput(index, wordmap, word, strlen(word));
+            lhput(index, wordmap, word, strlen(word));
             // printf("address of wordmap: %p\n", wordmap);
         }
     }
     free(word);
     }
     printf("TOTAL WORDS: %d\n", total);
+}
+
+void *coindexBuild(void *argp1) {
+    pthread_mutex_lock(&mutex);
+
+    pthread_mutex_unlock(&mutex);
+    return (void*)0;
+}
+
+int main(int argc, char *argv[]){
+    char pagedir[50]; // pagedir
+    char indexnm[50]; // filename
+    int threadnum;    //number of threads 
+    //string to int
+    threadnum = atoi(argv[3]);
+    pthread_t threads[threadnum]; //array of threads
+
+    // checks if there are 3 arguments
+    if (argc != 4) {
+        printf("usage: mindexer <pagedir> <indexnm> <threadnum>\n");
+        exit(EXIT_FAILURE);
+    }
+
+    //set the variables
+    strcpy(pagedir, argv[1]);
+    strcpy(indexnm, argv[2]);
+
+    int i; //incrementer
+    for (i = 0; i < threadnum; i++) {
+        if(pthread_create(&threads[i],NULL,coindexBuild,pagedir)!=0) {
+            exit(EXIT_FAILURE);
+        }
+    }
+    int j; //incrementer for the threads to run their functions
+    for (j = 0; j < threadnum; j++) {
+        if (pthread_join(threads[j], NULL) != 0) {
+            exit(EXIT_FAILURE);
+        }
+    }
+    //builds the index
+    mindex_t *index = mindexBuild(pagedir);
+    //saves the index
+    mindexsave(index, pagedir, indexnm);
+
+    exit(EXIT_SUCCESS);
 }
